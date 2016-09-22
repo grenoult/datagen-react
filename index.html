@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>React Tutorial</title>
+    <!-- Not present in the tutorial. Just for basic styling. -->
+    <link rel="stylesheet" href="css/base.css" />
+    <script src="https://unpkg.com/react@15.3.0/dist/react.js"></script>
+    <script src="https://unpkg.com/react-dom@15.3.0/dist/react-dom.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <script src="https://unpkg.com/jquery@3.1.0/dist/jquery.min.js"></script>
+    <script src="https://unpkg.com/remarkable@1.6.2/dist/remarkable.min.js"></script>
+  </head>
+  <body>
+    <div id="content"></div>
+    <!--
+    <script type="text/babel" src="scripts/example.js"></script>
+    -->
+    <script type="text/babel">
+
+    var apiUrl = "http://192.168.33.10/api/";
+    var fields;
+    /*
+    $.ajax(apiUrl + 'fields', {
+      method: 'GET',
+      complete: function(response) {
+        console.log(response.responseJSON);
+      }
+    })
+    */
+
+    var NameBox = React.createClass({
+      render: function() {
+        return (
+          <div className="nameBox">
+            <input type='text' placeholder='Name'/>
+          </div>
+        );
+      }
+    });
+
+    var FieldSubTypeBox = React.createClass({
+
+      getInitialState: function() {
+        return {
+          fields: [],
+          //value: undefined
+        }
+      },
+
+      render: function() {
+        if (this.props.fieldSelected.options) {
+          var subTypes = this.props.fieldSelected.options.options;
+
+          return (
+            <div className='fieldSubTypeBox'>
+              <label>
+                {this.props.fieldSelected.options.name}
+              </label>
+              <select>
+                {
+                  Object.keys(subTypes).map(function (key) {
+                    var label = subTypes[key]
+                    return (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    )
+                  })
+                }
+              </select>
+            </div>
+          )
+        } else {
+          return (<div></div>);
+        }
+      }
+    });
+
+    var FieldTypeBox = React.createClass({
+      getInitialState: function() {
+        return {
+          fields: [],
+          value: undefined
+        }
+      },
+
+      handleChange: function(event) {
+        this.props.handleFieldSelection(this.state.fields[event.target.value]);
+        this.setState({
+          value: event.target.value
+        })
+      },
+
+      render: function() {
+        return (
+          <div className='fieldTypeBox'>
+            <select onChange={this.handleChange}>
+              {this.state.fields.map(function(field, i) {
+                return (
+                  <option key={i} name={field.name} value={i}/*value={field.id}*/>
+                    {field.label}
+                  </option>
+                )
+              })}
+            </select>
+            {this.state.value}
+          </div>
+        );
+      },
+
+      componentDidMount: function(){
+        this.serverRequest = $.get(apiUrl+'fields', function (result) {
+          this.setState({
+            fields: result
+          });
+        }.bind(this))
+      }
+    });
+
+    var FormBox = React.createClass({
+      getInitialState: function() {
+        return {
+          field: []
+        }
+      },
+
+      handleFieldSelection: function(field) {
+        console.log(field);
+        this.setState({
+          field: field
+        });
+
+      },
+
+      render: function() {
+        return (
+          <div className='formBox'>
+            <form>
+              <NameBox/>
+              <FieldTypeBox handleFieldSelection={this.handleFieldSelection}/>
+              <FieldSubTypeBox fieldSelected={this.state.field}/>
+            </form>
+          </div>
+        );
+      }
+    });
+
+    ReactDOM.render(
+      <FormBox />,
+      document.getElementById('content')
+    );
+    </script>
+  </body>
+</html>
