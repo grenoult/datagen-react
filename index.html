@@ -20,20 +20,22 @@
 
     var apiUrl = "http://192.168.33.10/api/";
     var fields;
-    /*
-    $.ajax(apiUrl + 'fields', {
-      method: 'GET',
-      complete: function(response) {
-        console.log(response.responseJSON);
-      }
-    })
-    */
 
     var NameBox = React.createClass({
       render: function() {
         return (
           <div className="nameBox">
             <input type='text' placeholder='Name'/>
+          </div>
+        );
+      }
+    });
+
+    var DuplicateFieldBox = React.createClass({
+      render: function() {
+        return (
+          <div className="duplicateFieldBox">
+            <button>Add</button>
           </div>
         );
       }
@@ -80,16 +82,12 @@
     var FieldTypeBox = React.createClass({
       getInitialState: function() {
         return {
-          fields: [{
-            name: '',
-            label: 'Loading...',
-          }],
           value: undefined
         }
       },
 
       handleChange: function(event) {
-        this.props.handleFieldSelection(this.state.fields[event.target.value]);
+        this.props.handleFieldSelection(this.props.availableFields[event.target.value]);
         this.setState({
           value: event.target.value
         })
@@ -98,8 +96,8 @@
       render: function() {
         return (
           <div className='fieldTypeBox'>
-            <select onChange={this.handleChange} defaultValue="Select">
-              {this.state.fields.map(function(field, i) {
+            <select onChange={this.handleChange}>
+              {this.props.availableFields.map(function(field, i) {
                 return (
                   <option key={i} name={field.name} value={i}/*value={field.id}*/>
                     {field.label}
@@ -110,22 +108,10 @@
             {this.state.value}
           </div>
         );
-      },
-
-      componentDidMount: function(){
-        this.serverRequest = $.get(apiUrl+'fields', function (result) {
-          this.setState({
-            fields: result
-          });
-
-          // Trigger change event after init
-          var event = new Event('change', { bubbles: true });
-          $('select')[0].dispatchEvent(event);
-        }.bind(this))
       }
     });
 
-    var FormBox = React.createClass({
+    var RowBox = React.createClass({
       getInitialState: function() {
         return {
           field: []
@@ -133,7 +119,6 @@
       },
 
       handleFieldSelection: function(field) {
-        console.log(field);
         this.setState({
           field: field
         });
@@ -142,14 +127,51 @@
 
       render: function() {
         return (
-          <div className='formBox'>
-            <form>
-              <NameBox/>
-              <FieldTypeBox handleFieldSelection={this.handleFieldSelection}/>
-              <FieldSubTypeBox fieldSelected={this.state.field}/>
-            </form>
+          <div className='rowBox'>
+            <NameBox/>
+            <FieldTypeBox availableFields={this.props.availableFields} handleFieldSelection={this.handleFieldSelection}/>
+            <FieldSubTypeBox fieldSelected={this.state.field}/>
+            <DuplicateFieldBox/>
           </div>
         );
+      }
+    });
+
+    var FormBox = React.createClass({
+      getInitialState: function() {
+        return {
+          rows: [{id: 0}],
+          availableFields : []
+        }
+      },
+
+      componentDidMount: function(){
+        this.serverRequest = $.get(apiUrl+'fields', function (result) {
+          this.setState({
+            availableFields: result
+          });
+
+          // Trigger change event after init
+          var event = new Event('change', { bubbles: true });
+          $('select')[0].dispatchEvent(event);
+        }.bind(this))
+      },
+
+      render: function() {
+        return (
+          <div className='formBox'>
+            <form>
+            {this.state.rows.map(function(row, i) {
+              return (
+                <RowBox key={i}
+                        value={row}
+                        availableFields={this.state.availableFields}
+                />
+              )
+            }, this)}
+            </form>
+          </div>
+        )
       }
     });
 
