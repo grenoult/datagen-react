@@ -35,7 +35,7 @@
       render: function() {
         return (
           <div className="duplicateFieldBox">
-            <button>Add</button>
+            <button onClick={this.props.handleAddRow}>Add</button>
           </div>
         );
       }
@@ -122,7 +122,6 @@
         this.setState({
           field: field
         });
-
       },
 
       render: function() {
@@ -131,7 +130,7 @@
             <NameBox/>
             <FieldTypeBox availableFields={this.props.availableFields} handleFieldSelection={this.handleFieldSelection}/>
             <FieldSubTypeBox fieldSelected={this.state.field}/>
-            <DuplicateFieldBox/>
+            <DuplicateFieldBox handleAddRow={this.props.handleAddRow}/>
           </div>
         );
       }
@@ -140,7 +139,7 @@
     var FormBox = React.createClass({
       getInitialState: function() {
         return {
-          rows: [{id: 0}],
+          rows: [{id: 0}], // TODO change to load for a previous source such as local data or session
           availableFields : []
         }
       },
@@ -157,6 +156,17 @@
         }.bind(this))
       },
 
+      handleAddRow: function(e) {
+        e.preventDefault();
+
+        var rows = this.state.rows;
+        rows.push({id: rows.length});
+
+        this.setState({
+          rows: rows
+        })
+      },
+
       render: function() {
         return (
           <div className='formBox'>
@@ -166,6 +176,7 @@
                 <RowBox key={i}
                         value={row}
                         availableFields={this.state.availableFields}
+                        handleAddRow={this.handleAddRow}
                 />
               )
             }, this)}
