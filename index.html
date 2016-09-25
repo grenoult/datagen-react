@@ -80,7 +80,10 @@
     var FieldTypeBox = React.createClass({
       getInitialState: function() {
         return {
-          fields: [],
+          fields: [{
+            name: '',
+            label: 'Loading...',
+          }],
           value: undefined
         }
       },
@@ -95,7 +98,7 @@
       render: function() {
         return (
           <div className='fieldTypeBox'>
-            <select onChange={this.handleChange}>
+            <select onChange={this.handleChange} defaultValue="Select">
               {this.state.fields.map(function(field, i) {
                 return (
                   <option key={i} name={field.name} value={i}/*value={field.id}*/>
@@ -114,6 +117,10 @@
           this.setState({
             fields: result
           });
+
+          // Trigger change event after init
+          var event = new Event('change', { bubbles: true });
+          $('select')[0].dispatchEvent(event);
         }.bind(this))
       }
     });
