@@ -31,11 +31,22 @@
       }
     });
 
-    var DuplicateFieldBox = React.createClass({
+    var AddFieldBox = React.createClass({
       render: function() {
         return (
-          <div className="duplicateFieldBox">
+          <div className="addFieldBox">
             <button onClick={this.props.handleAddRow}>Add</button>
+          </div>
+        );
+      }
+    });
+
+    var RemoveRowBox = React.createClass({
+      render: function() {
+        return (
+          <div className="RemoveRowBox">
+            {this.props.rowId}
+            <button onClick={this.props.handleRemoveRow.bind(null, this.props.rowId)}>Remove</button>
           </div>
         );
       }
@@ -105,7 +116,6 @@
                 )
               })}
             </select>
-            {this.state.value}
           </div>
         );
       }
@@ -130,7 +140,8 @@
             <NameBox/>
             <FieldTypeBox availableFields={this.props.availableFields} handleFieldSelection={this.handleFieldSelection}/>
             <FieldSubTypeBox fieldSelected={this.state.field}/>
-            <DuplicateFieldBox handleAddRow={this.props.handleAddRow}/>
+            <AddFieldBox handleAddRow={this.props.handleAddRow}/>
+            <RemoveRowBox rowId={this.props.value.id} handleRemoveRow={this.props.handleRemoveRow}/>
           </div>
         );
       }
@@ -160,7 +171,28 @@
         e.preventDefault();
 
         var rows = this.state.rows;
-        rows.push({id: rows.length});
+
+        // Get last id
+        var maxId = Number(rows.slice(-1)[0].id);
+        maxId++;
+
+        rows.push({id: maxId});
+
+        this.setState({
+          rows: rows
+        })
+      },
+
+      handleRemoveRow: function(rowId, e) {
+        e.preventDefault();
+
+        var rows = this.state.rows;
+
+        for (var i in rows) {
+          if (rows[i].id == rowId) {
+            rows.splice(i, 1);
+          }
+        }
 
         this.setState({
           rows: rows
@@ -177,6 +209,7 @@
                         value={row}
                         availableFields={this.state.availableFields}
                         handleAddRow={this.handleAddRow}
+                        handleRemoveRow={this.handleRemoveRow}
                 />
               )
             }, this)}
