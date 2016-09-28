@@ -134,13 +134,24 @@
       },
 
       render: function() {
+        var removeBox = '';
+        var addBox = '';
+
+        if (this.props.nbRows > 1) {
+          removeBox = <RemoveRowBox rowId={this.props.value.id} handleRemoveRow={this.props.handleRemoveRow}/>;
+        }
+
+        if (this.props.lastRow) {
+          addBox = <AddFieldBox handleAddRow={this.props.handleAddRow}/>;
+        }
+
         return (
           <div className='rowBox'>
             <NameBox/>
             <FieldTypeBox availableFields={this.props.availableFields} handleFieldSelection={this.handleFieldSelection}/>
             <FieldSubTypeBox fieldSelected={this.state.field}/>
-            <AddFieldBox handleAddRow={this.props.handleAddRow}/>
-            <RemoveRowBox rowId={this.props.value.id} handleRemoveRow={this.props.handleRemoveRow}/>
+            {addBox}
+            {removeBox}
           </div>
         );
       }
@@ -203,12 +214,19 @@
           <div className='formBox'>
             <form>
             {this.state.rows.map(function(row, i) {
+              var lastRow = false;
+              if (this.state.rows.length === i + 1) {
+                lastRow = true;
+              }
+
               return (
                 <RowBox key={i}
                         value={row}
                         availableFields={this.state.availableFields}
                         handleAddRow={this.handleAddRow}
                         handleRemoveRow={this.handleRemoveRow}
+                        nbRows={this.state.rows.length}
+                        lastRow={lastRow}
                 />
               )
             }, this)}
