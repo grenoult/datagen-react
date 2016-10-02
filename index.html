@@ -12,9 +12,6 @@
   </head>
   <body>
     <div id="content"></div>
-    <!--
-    <script type="text/babel" src="scripts/example.js"></script>
-    -->
     <script type="text/babel">
 
     var apiUrl = "http://192.168.33.10/api/";
@@ -22,9 +19,14 @@
 
     var NameBox = React.createClass({
       render: function() {
+        var value = this.props.rowName ? this.props.rowName : '';
         return (
           <div className="nameBox">
-            <input type='text' placeholder='Name'/>
+            <input type='text'
+              placeholder='Name'
+              onInput={this.props.handleNameChange.bind(null, this.props.rowId)}
+              value={value}
+            />
           </div>
         );
       }
@@ -44,7 +46,6 @@
       render: function() {
         return (
           <div className="RemoveRowBox">
-            {this.props.rowId}
             <button onClick={this.props.handleRemoveRow.bind(null, this.props.rowId)}>Remove</button>
           </div>
         );
@@ -55,8 +56,7 @@
 
       getInitialState: function() {
         return {
-          fields: [],
-          //value: undefined
+          fields: []
         }
       },
 
@@ -90,23 +90,11 @@
     });
 
     var FieldTypeBox = React.createClass({
-      getInitialState: function() {
-        return {
-          value: undefined
-        }
-      },
-
-      handleChange: function(event) {
-        this.props.handleFieldSelection(this.props.availableFields[event.target.value]);
-        this.setState({
-          value: event.target.value
-        })
-      },
 
       render: function() {
         return (
           <div className='fieldTypeBox'>
-            <select onChange={this.handleChange}>
+            <select onChange={this.props.handleFieldSelection.bind(null, this.props.rowId)}>
               {this.props.availableFields.map(function(field, i) {
                 return (
                   <option key={i} name={field.name} value={i}/*value={field.id}*/>
@@ -147,8 +135,16 @@
 
         return (
           <div className='rowBox'>
-            <NameBox/>
-            <FieldTypeBox availableFields={this.props.availableFields} handleFieldSelection={this.handleFieldSelection}/>
+            <NameBox
+              handleNameChange={this.props.handleNameChange}
+              rowId={this.props.value.id}
+              rowName={this.props.value.name}
+            />
+            <FieldTypeBox
+              availableFields={this.props.availableFields}
+              handleFieldSelection={this.props.handleFieldSelection}
+              rowId={this.props.value.id}
+            />
             <FieldSubTypeBox fieldSelected={this.state.field}/>
             {addBox}
             {removeBox}
@@ -206,7 +202,40 @@
 
         this.setState({
           rows: rows
-        })
+        });
+      },
+
+      handleNameChange: function(rowId, e) {
+        var rows = this.state.rows;
+
+        for (var i in rows) {
+          if (rows[i].id == rowId) {
+            rows[i].name = e.target.value;
+            break;
+          }
+        }
+
+        this.setState({
+          rows: rows
+        });
+      },
+
+      handleFieldSelection: function(rowId, e) {
+        var rows = this.state.rows;
+        var selectedName = $(e.target.options[e.target.selectedIndex]).attr('name');
+
+        if (selectedName) {
+          for (var i in rows) {
+            if (rows[i].id == rowId) {
+              rows[i].field = selectedName;
+              break;
+            }
+          }
+        }
+
+        this.setState({
+          rows: rows
+        });
       },
 
       render: function() {
@@ -225,6 +254,8 @@
                         availableFields={this.state.availableFields}
                         handleAddRow={this.handleAddRow}
                         handleRemoveRow={this.handleRemoveRow}
+                        handleNameChange={this.handleNameChange}
+                        handleFieldSelection={this.handleFieldSelection}
                         nbRows={this.state.rows.length}
                         lastRow={lastRow}
                 />
