@@ -61,15 +61,15 @@
       },
 
       render: function() {
-        if (this.props.fieldSelected.options) {
-          var subTypes = this.props.fieldSelected.options.options;
+        if (this.props.availableFields.length > 0 && this.props.fieldSelected !== undefined && this.props.availableFields[this.props.fieldSelected].options) {
+          var subTypes = this.props.availableFields[this.props.fieldSelected].options.options;
 
           return (
             <div className='fieldSubTypeBox'>
               <label>
-                {this.props.fieldSelected.options.name}
+                {this.props.availableFields[this.props.fieldSelected].options.name}
               </label>
-              <select>
+              <select onChange={this.props.handleSubFieldSelection.bind(null, this.props.rowId)}>
                 {
                   Object.keys(subTypes).map(function (key) {
                     var label = subTypes[key]
@@ -82,7 +82,7 @@
                 }
               </select>
             </div>
-          )
+          );
         } else {
           return (<div></div>);
         }
@@ -109,17 +109,6 @@
     });
 
     var RowBox = React.createClass({
-      getInitialState: function() {
-        return {
-          field: []
-        }
-      },
-
-      handleFieldSelection: function(field) {
-        this.setState({
-          field: field
-        });
-      },
 
       render: function() {
         var removeBox = '';
@@ -145,7 +134,12 @@
               handleFieldSelection={this.props.handleFieldSelection}
               rowId={this.props.value.id}
             />
-            <FieldSubTypeBox fieldSelected={this.state.field}/>
+            <FieldSubTypeBox
+              availableFields={this.props.availableFields}
+              fieldSelected={this.props.value.fieldId}
+              handleSubFieldSelection={this.props.handleSubFieldSelection}
+              rowId={this.props.value.id}
+            />
             {addBox}
             {removeBox}
           </div>
@@ -153,11 +147,48 @@
       }
     });
 
+    var ResultBox = React.createClass({
+      /*
+      var outputTypes = {
+        'csv' => 'CSV',
+        'json' => 'JSON',
+        'html' => 'HTML',
+        'sql' => 'SQL',
+      };
+      */
+      getInitialState: function (){
+        return {
+          type: 'html'
+        }
+      },
+      render: function() {
+
+        var returnBox = <div></div>;
+        if (!this.props.result) {
+          return returnBox;
+        }
+
+        if (this.state.type === 'html') {
+          returnBox = <div>{JSON.stringify(this.props.result)}</div>;
+        }
+
+        return returnBox;
+
+
+        return (
+          <div className='resultBox'>
+
+          </div>
+        )
+      }
+    })
+
     var FormBox = React.createClass({
       getInitialState: function() {
         return {
           rows: [{id: 0}], // TODO change to load for a previous source such as local data or session
-          availableFields : []
+          availableFields : [],
+          records: 10
         }
       },
 
@@ -169,7 +200,8 @@
 
           // Trigger change event after init
           var event = new Event('change', { bubbles: true });
-          $('select')[0].dispatchEvent(event);
+          $('select')[0].dispatchEvent(event); // For field select
+          $('select')[1].dispatchEvent(event); // For subfield select
         }.bind(this))
       },
 
@@ -227,7 +259,8 @@
         if (selectedName) {
           for (var i in rows) {
             if (rows[i].id == rowId) {
-              rows[i].field = selectedName;
+              rows[i].type = selectedName;
+              rows[i].fieldId = e.target.value;
               break;
             }
           }
@@ -235,6 +268,63 @@
 
         this.setState({
           rows: rows
+        });
+      },
+
+      handleSubFieldSelection: function(rowId, e) {
+        var rows = this.state.rows;
+        var selectedName = $(e.target.options[e.target.selectedIndex]).val();
+
+        if (selectedName) {
+          for (var i in rows) {
+            if (rows[i].id == rowId) {
+              rows[i].subtype = selectedName;
+              break;
+            }
+          }
+        }
+
+        this.setState({
+          rows: rows
+        });
+      },
+
+      handleFormSubmission: function(e) {
+        var data = JSON.stringify({
+          queryFields : this.state.rows,
+          records: this.state.records
+        });
+
+        var fd = new FormData();
+        fd.append('query', data);
+
+        var p = $.ajax({
+          url: apiUrl+'generate',
+          data: fd,
+          processData: false,
+          contentType: false,
+          type: 'POST'
+        });
+
+        p.done(function(result) {
+          this.setState({
+            result: result
+          });
+        }.bind(this));
+
+        p.fail(function(result) {
+          var message = "Server error, please try again later."
+          if (result.responseJSON.message) {
+            message = result.responseJSON.message;
+          }
+
+          alert(message);
+        });
+      },
+
+      handleNumberSelection: function(e) {
+        this.setState({
+          records: $(e.target).val()
         });
       },
 
@@ -256,12 +346,24 @@
                         handleRemoveRow={this.handleRemoveRow}
                         handleNameChange={this.handleNameChange}
                         handleFieldSelection={this.handleFieldSelection}
+                        handleSubFieldSelection={this.handleSubFieldSelection}
                         nbRows={this.state.rows.length}
                         lastRow={lastRow}
                 />
               )
             }, this)}
             </form>
+            <select onChange={this.handleNumberSelection} defaultValue="10">
+              <option value="1">1</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">500</option>
+            </select>
+            <input type="button" value="Generate" onClick={this.handleFormSubmission}/>
+            <ResultBox result={this.state.result}/>
           </div>
         )
       }
