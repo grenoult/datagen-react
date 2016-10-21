@@ -26,6 +26,7 @@
               placeholder='Name'
               onInput={this.props.handleNameChange.bind(null, this.props.rowId)}
               value={value}
+              required="true"
             />
           </div>
         );
@@ -53,13 +54,6 @@
     });
 
     var FieldSubTypeBox = React.createClass({
-
-      getInitialState: function() {
-        return {
-          fields: []
-        }
-      },
-
       render: function() {
         if (this.props.availableFields.length > 0 && this.props.fieldSelected !== undefined && this.props.availableFields[this.props.fieldSelected].options) {
           var subTypes = this.props.availableFields[this.props.fieldSelected].options.options;
@@ -110,6 +104,12 @@
 
     var RowBox = React.createClass({
 
+      componentDidMount: function() {
+        // Trigger change event after init
+        var event = new Event('change', { bubbles: true });
+        $('.rowBox:last select')[0].dispatchEvent(event); // For field select
+      },
+
       render: function() {
         var removeBox = '';
         var addBox = '';
@@ -139,6 +139,7 @@
               fieldSelected={this.props.value.fieldId}
               handleSubFieldSelection={this.props.handleSubFieldSelection}
               rowId={this.props.value.id}
+              subtypeSelected={Boolean(this.props.value.subtype)}
             />
             {addBox}
             {removeBox}
@@ -148,60 +149,147 @@
     });
 
     var ResultBox = React.createClass({
-      /*
-      var outputTypes = {
-        'csv' => 'CSV',
-        'json' => 'JSON',
-        'html' => 'HTML',
-        'sql' => 'SQL',
-      };
-      */
       getInitialState: function (){
         return {
           type: 'html'
         }
       },
       render: function() {
-
-        var returnBox = <div></div>;
+        var resultBox = <div></div>;
         if (!this.props.result) {
-          return returnBox;
+          return resultBox;
         }
 
-        if (this.state.type === 'html') {
-          returnBox = <div>{JSON.stringify(this.props.result)}</div>;
+        if (this.props.resultType === 'html') {
+          var headers = Object.keys(this.props.result[0]);
+          resultBox = <div>
+            <table>
+              <thead>
+                <tr>
+                  {headers.map(function(header, i) {
+                    return <td key={i}>{header}</td>
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {this.props.result.map(function(row, i) {
+                  return <tr key={i}>{headers.map(function(header, i) {
+                    return <td key={i}>{row[header]}</td>
+                  })}</tr>;
+                })}
+              </tbody>
+            </table>
+          </div>;
         }
 
-        return returnBox;
+        if (this.props.resultType === 'csv') {
+          var headers = Object.keys(this.props.result[0]);
+          var csv = '';
+          var separator = ',';
+          var nbHeaders = headers.length;
+          var rows = this.props.result;
+          var value = '';
 
+          // Headers
+          for (var i in headers) {
+            csv = csv + headers[i];
+            if ((i+1) < nbHeaders) {
+              csv = csv + separator;
+            }
+          }
+          csv = csv + '\n';
+
+          // Rows
+          for (var i in rows) {
+            for (var j in headers) {
+              value = rows[i][headers[j]]
+
+              // Escape double quotes
+              value = value.replace(/\"/g,'""');
+
+              // Add doubles quotes
+              if (value.indexOf(',') !== -1) {
+                value = '"' + value + '"';
+              }
+
+              csv = csv + value;
+
+              if ((j+1) < nbHeaders) {
+                csv = csv + separator;
+              } else {
+                csv = csv + '\n';
+              }
+            }
+          }
+          resultBox = <pre>{csv}</pre>;
+        }
+        return resultBox;
+      }
+    })
+
+    var MessageBox = React.createClass({
+      render: function() {
+        if (!this.props.message) {
+          return (<div></div>);
+        }
 
         return (
-          <div className='resultBox'>
-
+          <div className='messageBox'>
+            {this.props.message}
           </div>
         )
       }
     })
 
+    var ResultTypeBox = React.createClass({
+      getInitialState: function() {
+        return {
+          types: {
+            html: 'HTML',
+            csv: 'CSV',
+            json: 'JSON',
+            sql: 'SQL'
+          }
+        }
+      },
+
+      render: function() {
+        return (
+          <select onChange={this.props.handleResultTypeChange}>
+            {Object.keys(this.state.types).map(function(obj, i){
+              var value = obj;
+              var name = this.state.types[obj];
+              return (
+                <option key={i} value={value}>{name}</option>
+              )
+            }.bind(this))}
+          </select>
+        )
+      }
+
+    });
+
     var FormBox = React.createClass({
       getInitialState: function() {
         return {
-          rows: [{id: 0}], // TODO change to load for a previous source such as local data or session
+          rows: [{
+            id: 0,
+            type: "integer",
+            subtype: "increment"
+          }], // TODO change to load for a previous source such as local data or session
           availableFields : [],
-          records: 10
+          records: 10,
+          resultType: 'html',
+          loading: true
         }
       },
 
       componentDidMount: function(){
         this.serverRequest = $.get(apiUrl+'fields', function (result) {
           this.setState({
-            availableFields: result
+            availableFields: result,
+            loading: false
           });
-
-          // Trigger change event after init
-          var event = new Event('change', { bubbles: true });
-          $('select')[0].dispatchEvent(event); // For field select
-          $('select')[1].dispatchEvent(event); // For subfield select
         }.bind(this))
       },
 
@@ -214,7 +302,11 @@
         var maxId = Number(rows.slice(-1)[0].id);
         maxId++;
 
-        rows.push({id: maxId});
+        rows.push({
+          id: maxId,
+          type: "integer",
+          subtype: "increment"
+        });
 
         this.setState({
           rows: rows
@@ -255,12 +347,21 @@
       handleFieldSelection: function(rowId, e) {
         var rows = this.state.rows;
         var selectedName = $(e.target.options[e.target.selectedIndex]).attr('name');
+        var availableFields = this.state.availableFields;
 
         if (selectedName) {
           for (var i in rows) {
             if (rows[i].id == rowId) {
               rows[i].type = selectedName;
               rows[i].fieldId = e.target.value;
+
+              // Attach first subtype found, if any
+              for (var j in availableFields) {
+                if (availableFields[j].name == rows[i].type && availableFields[j].options) {
+                  rows[i].subtype = Object.keys(availableFields[j].options.options)[0];
+                  break;
+                }
+              }
               break;
             }
           }
@@ -308,7 +409,8 @@
 
         p.done(function(result) {
           this.setState({
-            result: result
+            result: result,
+            message: false
           });
         }.bind(this));
 
@@ -318,8 +420,11 @@
             message = result.responseJSON.message;
           }
 
-          alert(message);
-        });
+          this.setState({
+            result: false,
+            message: message
+          });
+        }.bind(this));
       },
 
       handleNumberSelection: function(e) {
@@ -328,7 +433,19 @@
         });
       },
 
+      handleResultTypeChange: function(e) {
+        this.setState({
+          resultType: $(e.target).val()
+        });
+      },
+
       render: function() {
+        if (this.state.loading) {
+          return (
+            <div>Loading...</div>
+          )
+        }
+
         return (
           <div className='formBox'>
             <form>
@@ -363,7 +480,9 @@
               <option value="500">500</option>
             </select>
             <input type="button" value="Generate" onClick={this.handleFormSubmission}/>
-            <ResultBox result={this.state.result}/>
+            <ResultTypeBox type={this.state.type} handleResultTypeChange={this.handleResultTypeChange}/>
+            <MessageBox message={this.state.message}/>
+            <ResultBox result={this.state.result} resultType={this.state.resultType}/>
           </div>
         )
       }
