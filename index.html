@@ -77,6 +77,14 @@
               </select>
             </div>
           );
+
+        } else if (this.props.availableFields.length > 0 && this.props.fieldSelected !== undefined && this.props.availableFields[this.props.fieldSelected].textinput) {
+          var placeholder = this.props.availableFields[this.props.fieldSelected].textinputplaceholder;
+          return (
+            <div>
+              <input type="text" placeholder={placeholder} onChange={this.props.handleSubFieldSelection.bind(null, this.props.rowId)}/>
+            </div>
+          );
         } else {
           return (<div></div>);
         }
@@ -374,12 +382,21 @@
 
       handleSubFieldSelection: function(rowId, e) {
         var rows = this.state.rows;
-        var selectedName = $(e.target.options[e.target.selectedIndex]).val();
 
-        if (selectedName) {
+        if ($(e.target).is('select')) {
+          var selectedName = $(e.target.options[e.target.selectedIndex]).val();
+          if (selectedName) {
+            for (var i in rows) {
+              if (rows[i].id == rowId) {
+                rows[i].subtype = selectedName;
+                break;
+              }
+            }
+          }
+        } else if ($(e.target).is('input')) {
           for (var i in rows) {
             if (rows[i].id == rowId) {
-              rows[i].subtype = selectedName;
+              rows[i].subtype = $(e.target).val();
               break;
             }
           }
