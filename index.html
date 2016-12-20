@@ -126,6 +126,18 @@
     });
 
     var FieldSubTypeBox = React.createClass({
+      componentDidUpdate: function() {
+        $(this.refs.mySelectBox)
+          .off('change')
+          .on('change', '', function (e) {
+            if (this.props.availableFields.length > 0 && this.props.fieldSelected !== undefined && this.props.availableFields[this.props.fieldSelected].options) {
+              this.props.handleSubFieldSelection(this.props.rowId, e);
+            }
+          }
+          .bind(this))
+        .material_select();
+      },
+
       render: function() {
         if (this.props.availableFields.length > 0 && this.props.fieldSelected !== undefined && this.props.availableFields[this.props.fieldSelected].options) {
           var subTypes = this.props.availableFields[this.props.fieldSelected].options.options;
@@ -133,7 +145,7 @@
           return (
             <div className='fieldSubTypeBox col s3'>
               <div>
-                <select onChange={this.props.handleSubFieldSelection.bind(null, this.props.rowId)}>
+                <select ref="mySelectBox">
                   <option value="" disabled selected>{this.props.availableFields[this.props.fieldSelected].options.name}</option>
                   {
                     Object.keys(subTypes).map(function (key) {
@@ -165,10 +177,19 @@
 
     var FieldTypeBox = React.createClass({
 
+      componentDidMount() {
+        $(this.refs.mySelectBox)
+            .on('change', '', function (e) {
+              this.props.handleFieldSelection(this.props.rowId, e)
+            }
+            .bind(this))
+          .material_select();
+      },
+
       render: function() {
         return (
           <div className='fieldTypeBox col s3'>
-            <select onChange={this.props.handleFieldSelection.bind(null, this.props.rowId)}>
+            <select ref="mySelectBox">
               <option value="" disabled>Type</option>
               {this.props.availableFields.map(function(field, i) {
                 return (
@@ -462,7 +483,6 @@
 
       handleSubFieldSelection: function(rowId, e) {
         var rows = this.state.rows;
-
         if ($(e.target).is('select')) {
           var selectedName = $(e.target.options[e.target.selectedIndex]).val();
           if (selectedName) {
@@ -534,11 +554,6 @@
         this.setState({
           resultType: $(e.target).val()
         });
-      },
-
-      componentDidUpdate: function() {
-        // To make select work with MaterializeCSS
-        $('select').material_select();
       },
 
       render: function() {
