@@ -23,7 +23,7 @@
     <div class="nav-wrapper container">
       <a id="logo-container" href="#" class="brand-logo">Random Data</a>
       <ul class="right hide-on-med-and-down">
-        <li><a href="#home">Home</a></li>
+        <li class="active"><a href="#home">Home</a></li>
         <li><a href="#help">Help</a></li>
         <li><a href="#about">About</a></li>
       </ul>
@@ -109,7 +109,7 @@
       render: function() {
         return (
           <div className="addFieldBox">
-            <button className="waves-effect waves-teal btn-flat" onClick={this.props.handleAddRow}>Add</button>
+            <button className="waves-effect waves-teal btn" onClick={this.props.handleAddRow}>Add</button>
           </div>
         );
       }
@@ -119,7 +119,7 @@
       render: function() {
         return (
           <div className="RemoveRowBox">
-            <button className="waves-effect waves-teal btn-flat" onClick={this.props.handleRemoveRow.bind(null, this.props.rowId)}>Remove</button>
+            <button className="waves-effect waves-teal btn" onClick={this.props.handleRemoveRow.bind(null, this.props.rowId)}>Remove</button>
           </div>
         );
       }
@@ -544,6 +544,17 @@
         }.bind(this));
       },
 
+      handleFormReset: function(e) {
+          this.setState({
+              rows: [{
+                  id: 0,
+                  type: "integer",
+                  subtype: "increment",
+                  fieldId: 0
+              }], // TODO change to load for a previous source such as local data or session
+          });
+      },
+
       handleNumberSelection: function(e) {
         this.setState({
           records: $(e.target).val()
@@ -611,7 +622,7 @@
             </div>
             <div className='row'>
               <div className="col s12 center-align">
-                <a className="waves-effect waves-teal btn-flat" onClick={this.handleFormSubmission}><i className="material-icons left">refresh</i>reset</a>
+                <a className="waves-effect waves-teal btn-flat" onClick={this.handleFormReset}><i className="material-icons left">refresh</i>reset</a>
               </div>
             </div>
             <MessageBox message={this.state.message}/>
